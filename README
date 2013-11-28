@@ -1,0 +1,15 @@
+Greetings!
+Welcome to Lillian's repo!
+
+Here are some comments on the source files:
+
+ filetransfer.cpp------------This test is testing file transfer(put and get file to FTP sites) thru wifi
+ 
+ filetransfer8023.cpp--------This test is testing file transfer(put and get file to FTP sites) thru Ethernet
+ 
+ ProduceRecord.cpp-----------This test is testing audio record and procude with a random sample rate and size at same time
+ 
+ USBstress.cpp---------------Detach and attach USB thumb drive while writing random data to the thumb drive.
+ 
+ USBfnstress.cpp-------------Switch USB profile among serial,RNDIS and mass storage and check Active sync connection
+  
