@@ -3,9 +3,7 @@ Welcome to Lillian's repo!
 
 Here are some comments on the source files:
 
- filetransfer.cpp------------This test is testing file transfer(put and get file to FTP sites) thru wifi
- 
- filetransfer8023.cpp--------This test is testing file transfer(put and get file to FTP sites) thru Ethernet
+ filetransfer.cpp------------This test is testing file transfer(put and get file to FTP sites) thru Wi-Fi.
  
  ProduceRecord.cpp-----------This test is testing audio record and procude with a random sample rate and size at same time
  
