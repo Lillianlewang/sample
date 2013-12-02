@@ -7,7 +7,6 @@
 // For a copy of the license visit http://go.microsoft.com/fwlink/?LinkId=3223.
 //
 #include "usbfnstress.h"
-#include <windows.h>
 #include <Usbfnioctl.h>
 #include <regext.h>
 #include <snapi.h>
