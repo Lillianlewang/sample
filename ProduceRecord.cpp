@@ -102,11 +102,13 @@ int WINAPI WinMain (
 	// TODO: Module-specific parsing of tszUser ...
 	InitUserCmdLineUtils(mp.tszUser, NULL);
 	m_psinewavebuffer1 = new short[WAVE_BUFFER_SIZE];
-       m_psinewavebuffer2 = new short[WAVE_BUFFER_SIZE];
+        m_psinewavebuffer2 = new short[WAVE_BUFFER_SIZE];
+ 
 	// Main test loop
 	//
 	HANDLE hProduceThread	= CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)ProduceThread,  &mp, 0, NULL);
 	HANDLE hRecordThread	= CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)RecordThread,  &mp, 0, NULL);
+	DWORD dwWait = WaitForSingleObject(g_Exit,INFINITE);
 	while(!g_Exit)
 		{
 	Sleep(0);
