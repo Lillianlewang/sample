@@ -7,14 +7,9 @@
 // For a copy of the license visit http://go.microsoft.com/fwlink/?LinkId=3223.
 //
 
-#include <windows.h>
-#include <tchar.h>
 #include "CRC32.hpp"
 #include <stressutils.h>
 #include "usb100.h"
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // @doc SAMPLESTRESSDLL
@@ -127,15 +122,10 @@ typedef struct _fileHeader
 // globals
 
 HANDLE  g_hInst                         = NULL;
-LPTSTR  g_pszCmdLine                    = NULL;
 DWORD		g_cycles ;
-
-HANDLE hAuto                            = NULL;
-HANDLE hManual                          = NULL;
 
 HANDLE m_hWatchDogAttachEvent= NULL;
 HANDLE m_hWatchDogDetachEvent= NULL;
-//HANDLE m_hWatchDogTestEndEvent=NULL;
 HANDLE m_hstartwriteEvent = NULL;
 HANDLE m_hstopwriteEvent = NULL;
 static BOOL g_bExitVerifyThread;
@@ -239,7 +229,6 @@ BOOL InitializeStressModule (
 	HANDLE hUSBWriteThread	= CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)USBWriteThread,  NULL, 0, NULL);
 	m_hWatchDogAttachEvent = CreateEvent(NULL, FALSE, FALSE, L"ITC_OTG_WATCHDOGATTACH");
 	m_hWatchDogDetachEvent = CreateEvent(NULL, FALSE, FALSE, L"ITC_OTG_WATCHDOGDETACH");
-	//m_hWatchDogTestEndEvent = CreateEvent(NULL, FALSE, FALSE, L"ITC_OTG_WATCHDOGTESTEND");
 	m_hstartwriteEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	m_hstopwriteEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	HANDLE hUSB = CreateFile(L"HCD1:", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -373,34 +362,7 @@ PTCHAR GetTargetStoreName()
 
     return g_szTargetStore;
 }
-/////////////////////////////////////////////////////////////////////////////////////
-/*
-void GetRandomFATString( PTCHAR szName, DWORD nChars )
-{
-    const int MAX_FILENAME_LEN = 17;
-	int i = 0;
-   int iFilenameLen = (Random() % MAX_FILENAME_LEN) + 1;
-    iFilenameLen = iFilenameLen < nChars ? iFilenameLen : nChars - 1;
-    for ( i = 0; i < iFilenameLen; )
-    {
-        DWORD randVal = Random() % (0x7f - 0x20);  // Range of valid file name characters (including some exceptions)
-        randVal += 0x20;
 
-        switch ( randVal )
-        {
-            // Illegal chars
-            case 0x22: case 0x2a: case 0x2b: case 0x2c: case 0x2e: case 0x2f: case 0x3a: case 0x3b:
-            case 0x3c: case 0x3d: case 0x3e: case 0x3f: case 0x5b: case 0x5c: case 0x5d: case 0x7c:
-                break;
-
-            default:
-                szName[i++] = (TCHAR)randVal;
-                break;
-        }
-    }
-    szName[i] = 0;
-}
-*/
 UINT USBWriteThread()
 {
 RETAILMSG(1,(_T("Start USBWriteThread .................\r\n")));
@@ -411,112 +373,23 @@ HANDLE hFile = INVALID_HANDLE_VALUE ;
 BOOL bStopWrite = FALSE;
 BOOL rWriteUSB=FALSE;
         // Get a random but valid FAT filename
-       // GetRandomFATString( szRandomFileName, sizeof(szRandomFileName) / sizeof(szRandomFileName[0]) );
-		//szRandomFileName = TEXT("USBfile");
-       // wsprintf(g_szFilename, TEXT("%s%s\\%s%s"), GetTargetStoreName(), szFolderName, szRandomFileName, szBaseFileExt);
-		wsprintf(g_szFilename, TEXT("%s\\%s"), GetTargetStoreName(), szBaseFileExt);
+	wsprintf(g_szFilename, TEXT("%s\\%s"), GetTargetStoreName(), szBaseFileExt);
         RETAILMSG(1,(_T("g_szFilename = %s\r\n"),g_szFilename));
-        // Get random data, size and pointer offset
-     //  PBYTE pBytePtr = FillBuffer( &fileHdr);	
-        // OK, we're sufficiently randomized, commit to disk
         HANDLE hEvents[2];
-		hEvents[0] = m_hstartwriteEvent;
-		hEvents[1] = m_hstopwriteEvent;
+	hEvents[0] = m_hstartwriteEvent;
+	hEvents[1] = m_hstopwriteEvent;
         BOOL bSuccess = FALSE;
-//DWORD dwBytesWritten;
-		DWORD dwWaitObject;
-		DWORD dwTimeOut = INFINITE;
-
+	DWORD dwWaitObject;
+	DWORD dwTimeOut = INFINITE;
 		while(1){
-	     RETAILMSG(1,(_T("WaitForSingleObjects......\r\n")));
-		//dwWaitObject = WaitForMultipleObjects(2,hEvents,FALSE,dwTimeOut);
+	        RETAILMSG(1,(_T("WaitForSingleObjects......\r\n")));
 		dwWaitObject =WaitForSingleObject(m_hstartwriteEvent,dwTimeOut);
 		switch(dwWaitObject){
 		case WAIT_OBJECT_0:
 		RETAILMSG(1,(_T("Got m_hstartwriteEvent signaled!\r\n")));
 		while(!g_bStopWrite){
 			rWriteUSB = fnWriteFileToUSB();
-			/*
-			 // Get random data, size and pointer offset
-			PBYTE pBytePtr = FillBuffer( &fileHdr);	
-		// Create a file
-		 hFile= CreateFile(g_szFilename, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
-	     if ( hFile == INVALID_HANDLE_VALUE )
-	        {
-	            DWORD dwError = GetLastError();
-				RETAILMSG(1,(_T("CreateFile FAIL,error=%d\r\n"),dwError));
-				//LogFail(TEXT("CreateFile FAIL,error=%d\r\n"),dwError);
-	        }
-		else{		
-			// Get random data, size and pointer offset
-           PBYTE pBytePtr = FillBuffer( &fileHdr);	
-
-           // Write the file header
-           if ( !WriteFile( hFile, &fileHdr, sizeof(fileHdr), &dwBytesWritten, NULL ) )
-           {
-                DWORD dwError = GetLastError();
-                if ( dwError == ERROR_DISK_FULL )
-		            {
-		             RETAILMSG(1,(_T("FSStressWriteThread: Disk Full!\r\n")));
-					 LogFail(TEXT("FSStressWriteThread: Disk Full!\r\n"));
-						//  goto EXIT;
-		            }
-	            else
-		            {
-		               // wsprintf(szRandomFileName, TEXT("FS Stress Write Failure %d"), dwError);
-					    RETAILMSG(1,(_T(" WriteFile header Failure %d\r\n"), dwError));
-						//LogFail(TEXT("FS Stress Write Failure %d\r\n"), dwError);
-						//goto EXIT;
-		            }
-            }
-           else if ( dwBytesWritten != sizeof(fileHdr) )
-           {
-		         RETAILMSG(1,(_T("FS Stress Write File Header Error\r\n")));
-				// LogFail(TEXT("FS Stress Write File Header Error\r\n"));		
-            }
-           else
-           {
-
-            // Write the file body
-            //  RETAILMSG(1,(_T("W: Writing %d bytes from %s pointer 0x%08x\r\n"), fileHdr.dwFileSize, szPermissionStrings[permission], pBytePtr));
-			//LogVerbose(TEXT("W: Writing %d bytes from %s pointer 0x%08x\r\n"), fileHdr.dwFileSize, szPermissionStrings[permission], pBytePtr);
-            // Write the CRC'd data
-               if ( !WriteFile( hFile, pBytePtr, fileHdr.dwFileSize, &dwBytesWritten, NULL ) )
-               {
-                    DWORD dwError = GetLastError();
-	                if ( dwError == ERROR_DISK_FULL )
-	                {
-	                    RETAILMSG(1,(_T(" Disk Full!\r\n")));
-						LogFail(TEXT("fnFSStressWrite: Disk Full!\r\n"));
-						//goto EXIT;
-	                }
-	                else
-	                {
-	                  // wsprintf(szRandomFileName, TEXT("FS Stress Write Failure %d"), dwError);
-					   RETAILMSG(1,(_T("WriteFile body Failure %d\r\n"), dwError));
-					   //LogFail(TEXT("FS Stress Write Failure %d\r\n"), dwError);
-					  // goto EXIT;
-	                }
-               }
-               else if ( dwBytesWritten != fileHdr.dwFileSize)
-               {
-               RETAILMSG(1,(_T("Write File Body Error\r\n")));
-		      //	LogFail(TEXT("FS Stress Write File Body Error\r\n"));
-		
-                }
-               else
-               {
-                RETAILMSG(1,(_T("WriteFile sucess!\r\n")));
-                bSuccess = TRUE;
-
-		         }
-               }
-        }
-	    if(hFile!=INVALID_HANDLE_VALUE){
-	    RETAILMSG(1,(_T("CloseHandle hFile.\r\n")));
-        CloseHandle(hFile);
-	    }
-	    */
+			
 		 if ( rWriteUSB )
 	        {
 	        RETAILMSG(1,(_T("Deltefile in hard disk!\r\n")));
@@ -533,17 +406,13 @@ BOOL rWriteUSB=FALSE;
 			break;
 		}
 		}
-		// Ret = CESTRESS_PASS;
+
 		   RETAILMSG(1,(_T("exit while 1\r\n")));
-//EXIT:  
+
 	    if(hFile!=INVALID_HANDLE_VALUE){
         CloseHandle(hFile);
 		}
- //       if ( bSuccess )
-   //     {
-  //      RETAILMSG(1,(_T("Deltefile in hard disk!\r\n")));
-  //          DeleteReadOnlyFile( g_szFilename );
-   //     }
+
     return 0;
 }
 /////////////////////////////////////////////////////////////////////////////////////
@@ -553,17 +422,11 @@ FILEHDR fileHdr;
 DWORD dwBytesWritten;
 BOOL bSuccess = FALSE;
 PBYTE pBytePtr = NULL;
-
-//PBYTE pBytePtr = FillBuffer( &fileHdr); 
-
-
 			// Create a file
 			 hFile= CreateFile(g_szFilename, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
 			 if ( hFile == INVALID_HANDLE_VALUE )
 				{
 					DWORD dwError = GetLastError();
-				//	RETAILMSG(1,(_T("CreateFile FAIL,error=%d\r\n"),dwError));
-					//LogFail(TEXT("CreateFile FAIL,error=%d\r\n"),dwError);
 				}
 			else{		
 				// Get random data, size and pointer offset
@@ -581,10 +444,8 @@ PBYTE pBytePtr = NULL;
 						}
 					else
 						{
-						   // wsprintf(szRandomFileName, TEXT("FS Stress Write Failure %d"), dwError);
 							RETAILMSG(1,(_T(" WriteFile header Failure %d\r\n"), dwError));
-							//LogFail(TEXT("FS Stress Write Failure %d\r\n"), dwError);
-							//goto EXIT;
+
 						}
 				}
 			   else if ( dwBytesWritten != sizeof(fileHdr) )
@@ -619,8 +480,6 @@ PBYTE pBytePtr = NULL;
 				   else if ( dwBytesWritten != fileHdr.dwFileSize)
 				   {
 				   RETAILMSG(1,(_T("Write File Body Error\r\n")));
-				  //	LogFail(TEXT("FS Stress Write File Body Error\r\n"));
-			
 					}
 				   else
 				   {
@@ -634,11 +493,7 @@ PBYTE pBytePtr = NULL;
 			RETAILMSG(1,(_T("CloseHandle hFile.\r\n")));
 			CloseHandle(hFile);
 			}
-		//	 if ( bSuccess )
-//{
-	//			RETAILMSG(1,(_T("Deltefile in hard disk!\r\n")));
-	//			DeleteReadOnlyFile( g_szFilename );
-//				}
+
 return bSuccess;
 }
 
@@ -652,25 +507,7 @@ static void DeleteReadOnlyFile(  PTCHAR szFileName )
         // Note: We should check if the delete was on a READ_ONLY file and if so,
         //       a failed DeleteFile is probably the correct response from the FS
         //  Intel claims that it is not; The OS should have enforced...
-        /*
-        DWORD dwAttributes = GetFileAttributes( szFileName );
-        if ( dwAttributes != 0xffffffff )
-        {
-            if ( dwAttributes & FILE_ATTRIBUTE_READONLY )
-            {
-               RETAILMSG(1,(_T("Reattempting delete of READONLY file\r\n")));
-                SetFileAttributes( szFileName, dwAttributes & ~FILE_ATTRIBUTE_READONLY );
-                if ( !DeleteFile( szFileName ) )
-                {
-                   RETAILMSG(1,(_T("DeleteFile failure %d\r\n"), GetLastError()));
-                }
-            }
-        }
-        else
-        {
-			  RETAILMSG(1,(_T("GetFileAttributes failure %d\r\n"), GetLastError()));
-        }
-		*/
+
     }
 	else{
      RETAILMSG(1,(_T("DeleteFile %s pass error=%d\r\n"), szFileName,GetLastError()));
@@ -772,8 +609,7 @@ UINT DoStressIteration (
 	 		default:
 	 			break;
 	 		  }
-			//Write file to the hard disk.
-			//Results = fnFSStressWrite();//Just write,not verify.
+
 	}
 	 g_bStopWrite = TRUE;
 	SetEvent( m_hWatchDogDetachEvent);
@@ -782,8 +618,7 @@ UINT DoStressIteration (
 	Sleep(10000);
 	HANDLE hUSB = CreateFile(L"HCD1:", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if(hUSB != INVALID_HANDLE_VALUE){
-	//SetEvent(m_hWatchDogAttachEvent);
-	//Sleep(10000);
+
 		   if( DeviceIoControl(hUSB, 
 						   dwIOCTL, 
 						   (LPVOID)&USBNodeInfoIn, 
@@ -812,32 +647,13 @@ UINT DoStressIteration (
 									goto EXIT;
 									}
 							   } 
-							//  SetEvent(m_hstopwriteEvent);
-							//  g_bStopWrite = TRUE;
-							//  Sleep(0);
-							/*
-							start_tick_count = GetTickCount();
-							current_tick_count = 0;
-							changeHandles = FindFirstChangeNotification(g_szFilename, TRUE, FILE_NOTIFY_CHANGE_DIR_NAME);
-							while( changeHandles = FindFirstChangeNotification(g_szFilename, TRUE, FILE_NOTIFY_CHANGE_DIR_NAME)){
-								Sleep(500);
-							    current_tick_count = GetTickCount() - start_tick_count;
-								if(current_tick_count > time_out_tick_count){
-									Results=CESTRESS_FAIL;
-									RETAILMSG(1,(_T("FAILED to GetFileAttributes,exit this iteration with failure.\r\n")));
-									goto EXIT;								
-									//break;									
-								}
-                             RETAILMSG(1,(_T("GetFileAttributes==0xffffffff continue to wait,error=%x\r\n"),GetLastError()));
-							}  
-							*/
+						
 							RETAILMSG(1,(_T("GetFileAttributes SUCCESS!\r\n")));
 							//write file to hard disk again for verify...
 							BOOL b= fnWriteFileToUSB();
 							if(b){
 							RETAILMSG(1,(_T("fnWriteFileToUSB SUCCESS!\r\n")));
 							Results = fnFSStressVerify();
-							//DeleteReadOnlyFile(g_szFilename);
 							}
 							else{
 								Results=CESTRESS_FAIL;
@@ -865,11 +681,6 @@ UINT DoStressIteration (
 	RETAILMSG(1,(_T("\r\n\r\n******************************Results[%d]***************************FAIL!\r\n\r\n"),g_cycles));	
 	g_cycles++;
     return Results;
-	//return CESTRESS_PASS;
-	//return CESTRESS_FAIL;
-	//return CESTRESS_WARN1;
-	//return CESTRESS_WARN2;
-	//return CESTRESS_ABORT;  // Use carefully.  This will cause your module to be terminated immediately.
 }
 
 
@@ -880,34 +691,23 @@ RETAILMSG(1,(_T("fnFSStressVerify ENTRY\r\n")));
 DWORD dwError;
 SHORT i = 0;
 UINT Ret = CESTRESS_FAIL;
-//TCHAR szFileNameMask[MAX_PATH];
-//WIN32_FIND_DATA FoundFileData;
 HANDLE hFile = INVALID_HANDLE_VALUE;
-//HANDLE hFindHandle = INVALID_HANDLE_VALUE;
 BOOL	bSuccess = FALSE;
 DWORD dwoffset = 0;
 g_bExitVerifyThread = FALSE;
-       //wsprintf(szFileNameMask, TEXT("%s\\%s"), GetTargetStoreName(),szBaseFileExt);
-	   //RETAILMSG(1,(_T("szFileNameMask = %s\r\n"),szFileNameMask));
-        // Look for a file to process
-//while ( !g_bExitVerifyThread && (hFindHandle == INVALID_HANDLE_VALUE) )
-     //   {
-           // hFindHandle = FindFirstFile( szFileNameMask, &FoundFileData );
-       // }
-       //   RETAILMSG(1,(_T("V: Found %s with attributes 0x%08x\r\n"), FoundFileData.cFileName, FoundFileData.dwFileAttributes ));
-		//  LogVerbose(TEXT("V: Found %s with attributes 0x%08x\r\n"), FoundFileData.cFileName, FoundFileData.dwFileAttributes);
+       
             TCHAR szFullPathName[MAX_PATH] = {0};
-           // wsprintf(szFullPathName, TEXT("%s%s\\%s"), GetTargetStoreName(), szFolderName, FoundFileData.cFileName);
+           
 			wsprintf(szFullPathName, TEXT("%s\\%s"), GetTargetStoreName(), szBaseFileExt);
 			RETAILMSG(1,(_T("szFullPathName = %s\r\n"),szFullPathName));
             // Add test here to validate attributes work
             hFile = CreateFile( szFullPathName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
-			//hFile = CreateFile( szFullPathName, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+		
             if ( hFile == INVALID_HANDLE_VALUE )
             {             
 				dwError = GetLastError();
                 RETAILMSG(1,(_T("V: Failed to open %s, error = %d\r\n"),szFullPathName, dwError));
-			//	LogFail(TEXT("V: Failed to open %s, error = %d\r\n"),FoundFileData.cFileName, dwError);
+		
                 goto EXIT;
              }
             if ( hFile != INVALID_HANDLE_VALUE )
@@ -945,14 +745,12 @@ g_bExitVerifyThread = FALSE;
                 if ( dwCalcCrc == fileHdr.dwCRC )
                 {
                    RETAILMSG(1,(_T("CRC's match\r\n")));
-				   //LogVerbose(TEXT("V: - CRC's match\r\n"));
-                 //  DeleteReadOnlyFile( szFullPathName );
+
                 }
                 else
                 {
                     // Stop the write thread
 					RETAILMSG(1,(_T("V:- CRC's do not match!fileHdr.dwCRC=%x\r\n"),fileHdr.dwCRC));
-				//	LogFail(TEXT("V: - CRC's do not match!\r\n"));
 				   goto EXIT;
                 }
             }
@@ -1002,8 +800,7 @@ UINT CleanupTestThread (
 					dwThreadId, 
 					index 
 					);
-	//RETAILMSG(1,(_T("SetEvent m_hWatchDogTestEndEvent!\r\n")));
-//SetEvent(m_hWatchDogTestEndEvent);
+
 	return CESTRESS_WARN2;
 }
 
