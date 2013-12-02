@@ -24,8 +24,8 @@ TCHAR FileName[8];
 TCHAR FileNameBuffer[11];
 BOOL g_bFlagProduceTimeup =TRUE;
 BOOL g_bFlagRecordTimeup =TRUE;
-BOOL g_Exit=FALSE;
-
+BOOL g_ExitP=FALSE;
+BOOL g_ExitR=FALSE;
 // Function Prototypes
 UINT ProduceThread(LPVOID);
 UINT RecordThread(LPVOID);
@@ -109,7 +109,7 @@ int WINAPI WinMain (
 	HANDLE hProduceThread	= CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)ProduceThread,  &mp, 0, NULL);
 	HANDLE hRecordThread	= CreateThread( 0, 0, (LPTHREAD_START_ROUTINE)RecordThread,  &mp, 0, NULL);
 	DWORD dwWait = WaitForSingleObject(g_Exit,INFINITE);
-	while(!g_Exit)
+	while(!g_ExitP || !g_ExitR)
 		{
 	Sleep(0);
 		}
@@ -168,7 +168,7 @@ RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
     RETAILMSG(1,(_T("ProduceThread results.nFail=%d\r\n"),results.nFail));
 	// DON'T FORGET:  You must report your results to the harness before exiting
 	ReportResults (&results);
-	g_Exit=TRUE;
+	g_ExitP = TRUE;
 
 return retValue;
 }
@@ -220,7 +220,7 @@ RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
     RETAILMSG(1,(_T("RecordThread results.nFail=%d\r\n"),results.nFail));
 	// DON'T FORGET:  You must report your results to the harness before exiting
 	ReportResults (&results);
-
+        g_ExitR = TRUE;
 return retValue;
 }
 UINT Produce()
