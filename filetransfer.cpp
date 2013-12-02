@@ -8,28 +8,16 @@
 //
 
 #include <windows.h>
-#include <initguid.h>
 #include <tchar.h>
 #include <stressutils.h>
-#include <commctrl.h>
 #include <wininet.h>
 #include <Iphlpapi.h>
-#include <wtypes.h>
 #include <connmgr.h>
 #include <Connmgr_status.h>
-#include <stdlib.h>
-#include <stdio.h>
+
 #define STATUS_FREQUENCY		1000		// print out our status every time this number
 											// of iterations has been performed
 
-#define DEFAULT_WAITTIME		50			// Default time to wait (in ms) between binds.
-											// This is used to lessen the chance that
-											// multiple, concurrent bind tests will
-											// interfere with one another and to prevent
-											// the test from cycling thru the ports too
-											// quickly (WSAEADDRINUSE).
-
-#define MAX_ADDRS				100			// Maximum number of addresses to choose
 #define DEFAULT_METRIC_VALUE 4294967295											// from for binding purposes
 // Function Prototypes
 BOOL Setup(void);
