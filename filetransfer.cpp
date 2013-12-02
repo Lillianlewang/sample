@@ -8,7 +8,6 @@
 //
 
 #include <windows.h>
-#include <tchar.h>
 #include <stressutils.h>
 #include <wininet.h>
 #include <Iphlpapi.h>
