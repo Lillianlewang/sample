@@ -7,27 +7,18 @@
 // For a copy of the license visit http://go.microsoft.com/fwlink/?LinkId=3223.
 //
 
-//#include <ws2tcpip.h>
-
-
 #include <windows.h>
-//#include <winbase.h>
-
 #include <initguid.h>
-
 #include <tchar.h>
 #include <stressutils.h>
 #include <commctrl.h>
 #include <wininet.h>
 #include <Iphlpapi.h>
 #include <wtypes.h>
-
-
 #include <connmgr.h>
 #include <Connmgr_status.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <winsock2.h>
 #define STATUS_FREQUENCY		1000		// print out our status every time this number
 											// of iterations has been performed
 
@@ -37,9 +28,6 @@
 											// interfere with one another and to prevent
 											// the test from cycling thru the ports too
 											// quickly (WSAEADDRINUSE).
-
-#define MIN_PORT				1			// Defines the port range in which to bind
-#define MAX_PORT				65535		// sockets
 
 #define MAX_ADDRS				100			// Maximum number of addresses to choose
 #define DEFAULT_METRIC_VALUE 4294967295											// from for binding purposes
@@ -68,12 +56,9 @@ TCHAR FTPServerWiFiPassword[255];
 TCHAR FTPServerWiFiIP[255];
 TCHAR FTPServerEthernetIP[255];
 TCHAR EthernetCardName[255];
-
-
 //
 //***************************************************************************************
 void DottedNotationToDword( TCHAR *abc, DWORD* decvalue) 
-
 {
     char tempstr[16]={0};
 
@@ -99,7 +84,6 @@ int WINAPI WinMain (
 					)
 {
 	DWORD			 dwStartTime = GetTickCount();
-	//DWORD dwIP;
 	UINT			ret;        
 	LPTSTR			tszCmdLine;
 	int				retValue = 0;	// Module return value.
@@ -111,13 +95,13 @@ int WINAPI WinMain (
 	PROCESS_INFORMATION pi;
 	RETAILMSG(1,(_T("filetransfer.exe WinMain Entry.\r\n")));
 	if(CreateProcess(_T("filetransfer8023.exe"), wszCmdLine, NULL, NULL, NULL, CREATE_NEW_CONSOLE, NULL, NULL, NULL, &pi)){
-    RETAILMSG(1,(_T("CreateProcess filetransfer8023.exe succeed.\r\n")));
+        RETAILMSG(1,(_T("CreateProcess filetransfer8023.exe succeed.\r\n")));
 	}
 	else{
 		RETAILMSG(1,(_T("CreateProcess filetransfer8023.exe fail.\r\n")));
 	}
 	if(CreateProcess(_T("filetransferWAN.exe"), wszCmdLine, NULL, NULL, NULL, CREATE_NEW_CONSOLE, NULL, NULL, NULL, &pi)){
-    RETAILMSG(1,(_T("CreateProcess filetransferWAN.exe succeed.\r\n")));
+        RETAILMSG(1,(_T("CreateProcess filetransferWAN.exe succeed.\r\n")));
 	}
 	else{
 		RETAILMSG(1,(_T("CreateProcess filetransferWAN.exe fail.\r\n")));
@@ -134,8 +118,6 @@ int WINAPI WinMain (
 #else
 	tszCmdLine  = wszCmdLine;
 #endif
-
-
 
 	///////////////////////////////////////////////////////
 	// Initialization
@@ -170,7 +152,7 @@ int WINAPI WinMain (
 	if(!Setup())
 		return CESTRESS_ABORT;
 	LogVerbose (TEXT("Starting at tick = %u"), dwStartTime);
-RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
+        RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
 	///////////////////////////////////////////////////////
 	// Main test loop
 	//
@@ -178,10 +160,7 @@ RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
 	while ( CheckTime(mp.dwDuration, dwStartTime) )
 	{
 		dwIterations++;
-      RETAILMSG(1,(_T("dwIterations = %d\r\n"),dwIterations));
-		// Pause if we're supposed to
-		//if(dwWaitTime)
-		//	Sleep(dwWaitTime);
+                RETAILMSG(1,(_T("dwIterations = %d\r\n"),dwIterations));
 
 		ret = DoStressIteration();
 
@@ -192,7 +171,7 @@ RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
 			break;
 		}
 		if(ret==CESTRESS_PASS){
-        RETAILMSG(1,(_T("WiFi iter[%d] return PASS\r\n"),dwIterations));
+                        RETAILMSG(1,(_T("WiFi iter[%d] return PASS\r\n"),dwIterations));
 		}
 		else if(ret==CESTRESS_FAIL){
 			RETAILMSG(1,(_T("WiFi iter[%d] return FAIL\r\n"),dwIterations));
@@ -211,16 +190,7 @@ RETAILMSG(1,(_T("Starting at tick = %u\r\n"), dwStartTime));
 					dwEnd,
 					(dwEnd - dwStartTime) / 60000
 					);
-	/*
-	UINT * EthernetResults = NULL;
-	if(ReadResultsFromReg(EthernetResults)){
-     results.nFail=results.nFail+EthernetResults;
-	}
-	else{
-     
-	}
-*/
-RETAILMSG(1,(_T("WiFi results.nFail=%d\r\n"),results.nFail));
+        RETAILMSG(1,(_T("WiFi results.nFail=%d\r\n"),results.nFail));
 	// DON'T FORGET:  You must report your results to the harness before exiting
 	ReportResults (&results);
 	return retValue;
@@ -287,22 +257,18 @@ DWORD GetDefaultInterface(TCHAR *szAdapter, TCHAR *gate)
 
 BOOL Setup (void)
 {
-//HRESULT hRet = E_FAIL;
 BOOL bRet = FALSE;
 CONNMGR_DESTINATION_INFO networkDestInfo = {0};
 HANDLE m_hConnection = NULL;
 LPCTSTR pszConnName = NULL;
 CONNMGR_CONNECTION_DETAILED_STATUS * pStatusBuffer=NULL;
 DWORD  Dest, Mask, Gateway, InterfaceVal = 0;
-//MIB_IPFORWARDROW routeinfo;
 DWORD returnvalue = 0;
 DWORD BufferSize =NULL;
 HRESULT hr = S_OK; 
 memset(&routeinfo, 0, sizeof(MIB_IPFORWARDNUMBER));
 ReadRouteValue(FTPServerEthernetUsername, FTPServerEthernetPassword,FTPServerWiFiUsername,FTPServerWiFiPassword,FTPServerWiFiIP, FTPServerEthernetIP, EthernetCardName);
 RETAILMSG(1,(_T("FTPServerEthernetUsername=%s FTPServerEthernetPassword=%s FTPServerWiFiUsername=%s FTPServerWiFiPassword=%s FTPServerWiFiIP=%s FTPServerEthernetIP=%s EthernetCardName=%s\r\n"),FTPServerEthernetUsername,FTPServerEthernetPassword,FTPServerWiFiUsername,FTPServerWiFiPassword,FTPServerWiFiIP,FTPServerEthernetIP,EthernetCardName));
-//TCHAR  Address[] = _T("192.168.0.3");
-//TCHAR  Address[] = _T("10.200.162.151");
 TCHAR * mask = _T("255.255.255.255");
 	ConnMgrQueryDetailedStatus(pStatusBuffer,&BufferSize);	//allocate buffer
 	pStatusBuffer = (CONNMGR_CONNECTION_DETAILED_STATUS *)new BYTE[BufferSize];
@@ -368,16 +334,15 @@ TCHAR * mask = _T("255.255.255.255");
 UINT DoStressIteration (void)
 {
 	UINT uRet = CESTRESS_PASS;
-	//TCHAR  Address[] = _T("192.168.0.3");
-	//TCHAR  Address[] = _T("10.200.162.151");
 	RETAILMSG(1,(_T("WiFi DoStressIteration[%d]\r\n"),i++));
 	RETAILMSG(1,(_T("*******************wifi PutInternetFile to %s*******************\r\n"),FTPServerWiFiIP));
 	uRet = PutInternetFile(FTPServerWiFiIP, _T("")); // put our server
+	if(uRet != CESTRESS_PASS)
+	return uRet;
 	RETAILMSG(1,(_T("*******************wifi GetInternetFile from %s*******************\r\n"),FTPServerWiFiIP));
 	uRet = GetInternetFile(FTPServerWiFiIP,_T(""));//Get from our server
 	return uRet;
 }
-
 
 BOOL Cleanup (void)
 {
@@ -403,7 +368,6 @@ UINT PutInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 {
 
 	UINT		bReturn = CESTRESS_FAIL;
-	//bool		Fast ;
 	DWORD		Start , dwTotalBytes;
 	DWORD		dwSize = 0, 
 				dwFlags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_NO_CACHE_WRITE; 	
@@ -433,12 +397,7 @@ UINT PutInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 	}   	
 	RETAILMSG(1,(_T("WiFi InternetOpen success!\r\n")));
 
-
-	//if (!(hConnect = InternetConnect (hOpen, _T("136.179.160.31"), 60001, _T("ftptest"), _T("Siemens1"), INTERNET_SERVICE_FTP, INTERNET_FLAG_PASSIVE , 0)))
-	//if (!(hConnect = InternetConnect (hOpen, lpszServer, 60001, _T("ftptest"), _T("Siemens1"), INTERNET_SERVICE_FTP, INTERNET_FLAG_PASSIVE , 0)))
-//	if (!(hConnect = InternetConnect (hOpen, lpszServer, INTERNET_INVALID_PORT_NUMBER, _T("ftptest"), _T("Siemens1"), INTERNET_SERVICE_FTP, INTERNET_FLAG_PASSIVE , 0)))
 	if (!(hConnect = InternetConnect (hOpen, lpszServer, INTERNET_DEFAULT_FTP_PORT, FTPServerWiFiUsername, FTPServerWiFiPassword, INTERNET_SERVICE_FTP, 0 , 0)))
-	//if (!(hConnect = InternetConnect (hOpen, lpszServer, 21, _T("ftptest2"), _T("Siemens1"), INTERNET_SERVICE_FTP, INTERNET_FLAG_PASSIVE , 0)))
 	{
 		DWORD foo = GetLastError() ;
 		RETAILMSG(1,(_T("WiFi InternetConnect FAIL Error=%x\r\n"),foo));		
@@ -446,8 +405,6 @@ UINT PutInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 	}
 	RETAILMSG(1,(_T("WiFi InternetConnect success!\r\n")));
 
-	//if (!(hRequest = FtpOpenFile(hConnect, TEXT("/FTP/testsend.pdf") , GENERIC_WRITE, INTERNET_FLAG_TRANSFER_ASCII , 0)))
-	//if (!(hRequest = FtpOpenFile(hConnect, TEXT("/FTP/testsend.pdf") , GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_NO_CACHE_WRITE, 0)))
 	if (!(hRequest = FtpOpenFile(hConnect, PutFileName , GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY , 0)))
 	{
 	RETAILMSG(1,(_T("WiFi FtpOpenFile FAIL Error=%x\r\n"),GetLastError()));
@@ -464,14 +421,7 @@ UINT PutInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 			goto exit;
 		}
 			RETAILMSG(1,(_T("WiFi InternetWriteFile success!dwSize=%x\r\n"),dwSize));
-			/*
-			for(int i=0;i<dwSize;i++){
-	             if(i%16==0){          
-				 RETAILMSG(1,(_T("\r\n")));
-			     }
-			RETAILMSG(1,(_T("sendstr[%d]=%x"),i,sendstr[i]));
-			}
-			*/
+
 		if (dwSize >= 0){
 			dwTotalBytes += dwSize ;
 		}
@@ -507,8 +457,6 @@ exit:
 	CloseTheHandles();
 	return bReturn;
 }
-
-
 
 UINT GetInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 {
@@ -560,12 +508,6 @@ UINT GetInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 		}
 		RETAILMSG(1,(_T("WiFi InternetReadFile success,get data Size=%x\r\n"),dwSize));
 
-		//for(int i=0;i<512;i++){
-		//	if(i%16==0){
-       //    RETAILMSG(1,(_T("\r\n")));
-		//	}
-		//RETAILMSG(1,(_T("0x%x"),*(lpBufferA+i)));
-		//}
 		if (dwSize != 0)    
 		{
 			dwTotalBytes += dwSize ;
@@ -574,9 +516,7 @@ UINT GetInternetFile(LPCTSTR lpszServer, LPTSTR lpszProxyServer)
 		}
 			if (dwSize != 0)    
 			{
-				//if(!Fast){
-					LogVerbose(_T("WiFi HTTP page Received %d bytes \r\n"), dwTotalBytes);
-				//}
+				LogVerbose(_T("WiFi HTTP page Received %d bytes \r\n"), dwTotalBytes);
 			} 
 			else {
 				LogVerbose(_T("WiFi HTTP page Received 0 bytes -- DONE \r\n"));
@@ -610,13 +550,6 @@ exit:
 void CloseTheHandles()
 {
 	LogVerbose(_T("WiFi Closeing Handles !!"));
-	// Close the Internet handles.
-	//if (hRequest!=NULL)
-	//{
-	//	if (!InternetCloseHandle (hRequest))
-	//		LogFail(_T("CloseHandle (hRequest) Error: %x"), GetLastError());
-	//	hRequest = NULL ;
-	//}
 	if (hConnect!=NULL)
 	{
 		if (!InternetCloseHandle (hConnect))
